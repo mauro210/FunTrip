@@ -1,0 +1,64 @@
+# === General project ignores ===
+
+# System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and environments
+.env
+.env.*.local
+*.log
+
+# Editor/project files (global)
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# === Frontend ignores ===
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# Build outputs
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local # For .env.local or similar files in frontend
+
+# TypeScript build info
+frontend/*.tsbuildinfo
+
+# Vite cache
+frontend/.vite/
+
+# === Backend ignores ===
+
+# Python virtual environment
+backend/venv/
+backend/.venv/
+backend/env/
+
+# Python bytecode / cache
+backend/__pycache__/
+backend/**/*.py[cod]
+backend/*.pyc
+
+# Environment/config files
+backend/.env
+
+# SQLite or other temporary DBs
+backend/*.sqlite3
+backend/*.db
+backend/*.sqlite
+
+# Testing and linting caches
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.coverage
