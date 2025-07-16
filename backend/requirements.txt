@@ -4,3 +4,8 @@ sqlalchemy
 pydantic
 python-dotenv
 alembic
+passlib[bcrypt]
+python-jose[cryptography]
+python-dotenv
+pydantic[email]
+python-multipart

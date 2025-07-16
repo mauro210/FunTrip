@@ -22,8 +22,7 @@ class UserCreate(UserBase):
                 "email": "john.doe@example.com",
                 "first_name": "John",
                 "last_name": "Doe",
-                "password": "securepassword123",
-                "confirm_password": "securepassword123"
+                "password": "securepassword123"
             }
         }
     )
@@ -70,8 +69,7 @@ class PasswordChange(BaseModel):
         json_schema_extra={
             "example": {
                 "current_password": "oldpassword123",
-                "new_password": "newpassword123",
-                "confirm_new_password": "newpassword123"
+                "new_password": "newpassword123"
             }
         }
     )
@@ -99,8 +97,7 @@ class PasswordResetConfirm(BaseModel):
         json_schema_extra={
             "example": {
                 "token": "reset-token-here",
-                "new_password": "newpassword123",
-                "confirm_new_password": "newpassword123"
+                "new_password": "newpassword123"
             }
         }
     )
@@ -155,30 +152,6 @@ class UserProfile(UserResponse):
             }
         }
     )
-
-
-class Token(BaseModel):
-    """Schema for authentication token"""
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int = Field(..., description="Token expiration time in seconds")
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                "token_type": "bearer",
-                "expires_in": 3600
-            }
-        }
-    )
-
-
-class TokenData(BaseModel):
-    """Schema for token data"""
-    user_id: Optional[int] = None
-    username: Optional[str] = None
-
 
 class EmailVerification(BaseModel):
     """Schema for email verification"""
