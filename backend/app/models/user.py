@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, func
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -10,6 +10,13 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False) # For email verification
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    last_login = Column(DateTime(timezone=True), nullable=True) # Will update on login
 
     # Relationships:
     # A User can have many Trips
