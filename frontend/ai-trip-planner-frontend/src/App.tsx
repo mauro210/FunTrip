@@ -1,21 +1,68 @@
-import { useEffect, useState } from 'react'
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard"; 
+import { AuthProvider, useAuth } from "./AuthContext"; 
+import "./App.css"; 
+
+// PrivateRoute component to protect routes
+const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({
+  children,
+}) => {
+  
+  const { token, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="page-container">Loading authentication...</div>;
+  }
+
+  return token ? children : <Navigate to="/login" replace />;
+};
 
 function App() {
-  const [message, setMessage] = useState('')
-
-  useEffect(() => {
-    fetch('http://127.0.0.1:8000/')
-      .then(res => res.json())
-      .then(data => setMessage(data.message))
-      .catch(err => console.error("API call failed:", err))
-  }, [])
-
   return (
-    <div>
-      <h1>AI Trip Planner</h1>
-      <p>Backend says: {message}</p>
-    </div>
-  )
+    <Router>
+      <AuthProvider>
+        {" "}
+        {/* Wrap the entire app with AuthProvider */}
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<Home />} /> {/* Simple home page */}
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            {/* Protected Dashboard Route */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            {/* Add more protected routes here */}
+            {/* Fallback for unknown routes */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </AuthProvider>
+    </Router>
+  );
 }
 
-export default App
+// Simple Home Page Component
+const Home: React.FC = () => (
+  <div className="page-container">
+    <h2>Welcome to AI Trip Planner!</h2>
+    <p>Plan your perfect trip with the power of AI.</p>
+  </div>
+);
+
+export default App;

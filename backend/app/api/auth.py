@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
     # Check for existing username or email
     existing_user_by_username = user_service.get_user_by_username(db, username=user_in.username)
@@ -25,9 +25,20 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
     if existing_user_by_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
-    # Create the user (assuming confirm_password is handled on frontend or via Pydantic validator)
-    new_user = user_service.create_user(db, user_in)
-    return new_user # Return the newly created user's public data
+    # Create the user
+    new_user = user_service.create_user(db=db, user_in=user_in)
+
+    # Generate token for the newly registered user (for auto-login)
+    access_token_expires = timedelta(minutes=user_service.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = user_service.create_access_token(
+        data={"user_id": new_user.id, "username": new_user.username}, # Use new_user's data
+        expires_delta=access_token_expires
+    )
+    # Return the token, matching the response_model
+    return {"access_token": access_token, "token_type": "bearer", "expires_in": user_service.ACCESS_TOKEN_EXPIRE_MINUTES}
+
+
+
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
