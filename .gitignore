@@ -1,41 +1,41 @@
 # === General project ignores ===
 
-# System files
+# Operating System files
 .DS_Store
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
 # Logs and environments
-.env
-.env.*.local
-*.log
+.env                  
+.env.*.local          
+*.log                 
 
 # Editor/project files (global)
-.vscode/
+.vscode/              
 !.vscode/extensions.json
-.idea/
+.idea/                
 
 # === Frontend ignores ===
 
 # Logs
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/pnpm-debug.log*
-frontend/lerna-debug.log*
+frontend/ai-trip-planner-frontend/npm-debug.log*
+frontend/ai-trip-planner-frontend/yarn-debug.log*
+frontend/ai-trip-planner-frontend/yarn-error.log*
+frontend/ai-trip-planner-frontend/pnpm-debug.log*
+frontend/ai-trip-planner-frontend/lerna-debug.log*
 
-# Build outputs
-frontend/node_modules/
-frontend/dist/
-frontend/dist-ssr/
-frontend/*.local # For .env.local or similar files in frontend
+# Build outputs and dependencies
+frontend/ai-trip-planner-frontend/node_modules/ 
+frontend/ai-trip-planner-frontend/dist/        
+frontend/ai-trip-planner-frontend/dist-ssr/    
+frontend/ai-trip-planner-frontend/*.local      
 
 # TypeScript build info
-frontend/*.tsbuildinfo
+frontend/ai-trip-planner-frontend/*.tsbuildinfo
 
 # Vite cache
-frontend/.vite/
+frontend/ai-trip-planner-frontend/.vite/
 
 # === Backend ignores ===
 
@@ -46,15 +46,15 @@ backend/env/
 
 # Python bytecode / cache
 backend/__pycache__/
-backend/**/*.py[cod]
-backend/*.pyc
+backend/**/*.py[cod] 
+backend/*.pyc       
 
 # Environment/config files
-backend/.env
+backend/.env         
 
-# SQLite or other temporary DBs
+# SQLite or other temporary DBs (if used)
 backend/*.sqlite3
-backend/*.db
+backend/*.db         
 backend/*.sqlite
 
 # Testing and linting caches
