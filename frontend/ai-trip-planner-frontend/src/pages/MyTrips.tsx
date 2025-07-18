@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useAuth, API_BASE_URL } from "../AuthContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import ConfirmModal from "../components/ConfirmModal";
 
 // Define a type for your Trip data as received from the backend
 interface Trip {
   id: number;
   name: string;
   destination: string;
-  start_date: string; // Dates often come as strings from API
+  start_date: string;
   end_date: string;
   num_travelers: number;
   budget_per_person: number | null;
@@ -20,54 +21,115 @@ const MyTrips: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tripToDelete, setTripToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+
+  const fetchTrips = async () => {
+    if (!token || !user) {
+      setIsFetching(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/trips/`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data: Trip[] = await response.json();
+        setTrips(data);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to fetch trips.");
+        console.error("Fetch trips error:", errorData);
+      }
+    } catch (err) {
+      setError("Network error or server is unreachable.");
+      console.error("Fetch trips network error:", err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      if (!token || !user) {
-        setIsFetching(false);
-        return; // Don't fetch if not authenticated
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/trips/`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`, // Include the JWT token
-          },
-        });
-
-        if (response.ok) {
-          const data: Trip[] = await response.json();
-          setTrips(data);
-        } else {
-          const errorData = await response.json();
-          setError(errorData.detail || "Failed to fetch trips.");
-          console.error("Fetch trips error:", errorData);
-        }
-      } catch (err) {
-        setError("Network error or server is unreachable.");
-        console.error("Fetch trips network error:", err);
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    // Only fetch if not currently loading auth and user is available
     if (!isLoading && user) {
       fetchTrips();
     }
-  }, [token, user, isLoading]); // Re-run when token or user changes, or loading state resolves
+  }, [token, user, isLoading]);
+
+  const confirmDelete = (tripId: number, tripName: string) => {
+    setTripToDelete({ id: tripId, name: tripName });
+    setIsModalOpen(true);
+  };
+
+  const handleCancelDelete = () => {
+    setIsModalOpen(false);
+    setTripToDelete(null);
+  };
+
+  const executeDeleteTrip = async () => {
+    if (!token || !tripToDelete) {
+      setError("Authentication error or no trip selected for deletion.");
+      setIsModalOpen(false); // Close modal
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/trips/${tripToDelete.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 204) {
+        // Just update the trips list by removing the deleted trip
+        setTrips((prevTrips) =>
+          prevTrips.filter((trip) => trip.id !== tripToDelete.id)
+        );
+        setError(null);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.detail || "Failed to delete trip.");
+        console.error("Delete trip error:", errorData);
+      }
+    } catch (err) {
+      setError("Network error or server is unreachable.");
+      console.error("Delete trip network error:", err);
+    } finally {
+      setIsModalOpen(false); // Close modal
+      setTripToDelete(null); // Clear trip to delete
+    }
+  };
+
+  // Function to navigate to the edit trip page
+  const handleEditTrip = (tripId: number) => {
+    navigate(`/edit-trip/${tripId}`);
+  };
 
   if (isLoading || isFetching) {
     return <div className="page-container">Loading your trips...</div>;
   }
 
   if (error) {
-    return <div className="page-container error-message">{error}</div>;
+    return (
+      <div
+        className="page-container error-message"
+        style={{ whiteSpace: "pre-wrap" }}
+      >
+        {error}
+      </div>
+    );
   }
 
   if (!user) {
-    // Should be caught by PrivateRoute, but good defensive check
     return (
       <div className="page-container">Please log in to view your trips.</div>
     );
@@ -115,14 +177,31 @@ const MyTrips: React.FC = () => {
                     {trip.activity_preferences.join(", ")}
                   </p>
                 )}
-              {/* Link to view itinerary (future phase) */}
-              <button className="navbar-button">
-                View Itinerary (Coming Soon)
-              </button>
+              <div className="trip-card-actions">
+                <button
+                  onClick={() => handleEditTrip(trip.id)}
+                  className="navbar-button"
+                >
+                  Edit Trip
+                </button>
+                <button
+                  onClick={() => confirmDelete(trip.id, trip.name)}
+                  className="navbar-button"
+                >
+                  Delete Trip
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isModalOpen}
+        message={`Are you sure you want to delete trip "${tripToDelete?.name}"? This action cannot be undone.`}
+        onConfirm={executeDeleteTrip}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

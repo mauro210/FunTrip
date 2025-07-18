@@ -4,10 +4,11 @@ import Navbar from './components/Navbar';
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import TripPlanningForm from './pages/TripPlanningForm'; 
-import MyTrips from './pages/MyTrips'; 
+import TripPlanningForm from './pages/TripPlanningForm';
+import MyTrips from './pages/MyTrips';
+import EditTripForm from './pages/EditTripForm'; 
 import { AuthProvider, useAuth } from './AuthContext';
-import './App.css'; 
+import './App.css'; // Import global styles
 
 // PrivateRoute component to protect routes
 const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -54,6 +55,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <MyTrips />
+                </PrivateRoute>
+              }
+            />
+            {/* Protected Edit Trip Route with dynamic ID */}
+            <Route
+              path="/edit-trip/:tripId"
+              element={
+                <PrivateRoute>
+                  <EditTripForm />
                 </PrivateRoute>
               }
             />
