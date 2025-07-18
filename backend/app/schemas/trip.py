@@ -26,6 +26,26 @@ class TripCreate(BaseModel):
         }
     )
 
+class TripUpdate(BaseModel):
+    """Schema for updating an existing trip. All fields are optional."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="Name of the trip")
+    destination: Optional[str] = Field(None, min_length=1, max_length=100, description="Destination city/country")
+    start_date: Optional[date] = Field(None, description="Start date of the trip (YYYY-MM-DD)")
+    end_date: Optional[date] = Field(None, description="End date of the trip (YYYY-MM-DD)")
+    num_travelers: Optional[int] = Field(None, ge=1, description="Number of travelers (minimum 1)")
+    budget_per_person: Optional[float] = Field(None, ge=0, description="Budget per person in USD (optional)")
+    activity_preferences: Optional[List[str]] = Field(None, description="List of activity preferences (e.g., ['nature', 'architecture'])")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "Updated Europe Trip",
+                "budget_per_person": 120.0,
+                "activity_preferences": ["museums", "shopping"]
+            }
+        }
+    )
+
 class TripOut(BaseModel):
     """Schema for returning trip details."""
     id: int
