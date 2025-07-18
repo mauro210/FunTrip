@@ -1,26 +1,20 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard"; 
-import { AuthProvider, useAuth } from "./AuthContext"; 
-import "./App.css"; 
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import TripPlanningForm from './pages/TripPlanningForm'; 
+import MyTrips from './pages/MyTrips'; 
+import { AuthProvider, useAuth } from './AuthContext';
+import './App.css'; 
 
 // PrivateRoute component to protect routes
-const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({
-  children,
-}) => {
-  
+const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
   const { token, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="page-container">Loading authentication...</div>;
+    return <div className="page-container">Loading authentication...</div>; 
   }
 
   return token ? children : <Navigate to="/login" replace />;
@@ -29,9 +23,7 @@ const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        {" "}
-        {/* Wrap the entire app with AuthProvider */}
+      <AuthProvider> {/* Wrap the entire app with AuthProvider */}
         <Navbar />
         <main className="main-content">
           <Routes>
@@ -44,6 +36,24 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            {/* Protected Trip Planning Form Route */}
+            <Route
+              path="/plan-trip"
+              element={
+                <PrivateRoute>
+                  <TripPlanningForm />
+                </PrivateRoute>
+              }
+            />
+            {/* Protected My Trips Route */}
+            <Route
+              path="/my-trips"
+              element={
+                <PrivateRoute>
+                  <MyTrips />
                 </PrivateRoute>
               }
             />

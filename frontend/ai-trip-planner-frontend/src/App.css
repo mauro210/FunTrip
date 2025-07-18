@@ -154,7 +154,10 @@ button:focus-visible {
 
 .auth-form input[type="text"],
 .auth-form input[type="email"],
-.auth-form input[type="password"] {
+.auth-form input[type="password"],
+.trip-form input[type="text"], 
+.trip-form input[type="date"], 
+.trip-form input[type="number"] { 
   width: 100%; 
   padding: 10px;
   border: 1px solid #ccc;
@@ -163,7 +166,8 @@ button:focus-visible {
   box-sizing: border-box; /* Include padding in width */
 }
 
-.auth-form input:focus {
+.auth-form input:focus,
+.trip-form input:focus { 
   border-color: #646cff;
   outline: none;
   box-shadow: 0 0 0 2px rgba(100, 108, 255, 0.2);
@@ -179,7 +183,8 @@ button:focus-visible {
   font-size: 1.1rem;
   cursor: pointer;
   transition: background-color 0.25s;
-  margin: 1.5rem auto; 
+  margin-inline: auto; /* Keep horizontal centering */
+  margin-block-start: 1rem;
   display: block; /* Ensure it behaves as a block for margin: auto to work */
 }
 
@@ -213,7 +218,7 @@ button:focus-visible {
   padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
+  max-width: 800px; /* Increased max-width for trip form/dashboard */
   margin: 2rem auto;
   text-align: center;
   color: #333;
@@ -227,6 +232,111 @@ button:focus-visible {
   flex-direction: column;
   width: 100%;
 }
+
+.dashboard-actions {
+  display: flex; /* Use flexbox */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  justify-content: center; /* Center items horizontally */
+}
+
+/* Trip Form Specific Styles */
+.trip-form {
+  text-align: left; /* Align labels and inputs within the form */
+  max-width: 600px; /* Adjust width for trip form if needed */
+  margin: 0 auto; /* Center the form within page-container */
+}
+
+.trip-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.trip-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.preferences-checkbox-group {
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Responsive columns */
+  gap: 10px; /* Gap between grid items */
+  margin-top: 0.5rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: normal;
+  color: #333;
+  cursor: pointer;
+}
+
+/* Trip List Styles */
+.trip-list-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.trip-card {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.trip-card h3 {
+  color: #646cff;
+  margin-top: 0;
+  margin-bottom: 0.8rem;
+  font-size: 1.25rem;
+}
+
+.trip-card p {
+  margin-bottom: 0.5rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.trip-card button {
+  margin-top: 1rem;
+  align-self: flex-start; /* Align button to start of flex item */
+  width: auto; /* Allow button to size based on content */
+  padding: 0.5em 1em;
+  font-size: 0.9em;
+}
+
+/* This targets both navbar and dashboard buttons */
+.navbar-links a.navbar-button,
+.page-container a.auth-button,
+.page-container a.navbar-button { /* Target Link components specifically when styled as buttons */
+  background-color: #646cff; 
+  color: #fff; 
+  border: none; 
+  padding: 0.5em 1em; /* Match button padding */
+  border-radius: 5px; /* Match button border-radius */
+  cursor: pointer;
+  transition: background-color 0.25s;
+  text-decoration: none; /* Remove underline */
+  display: inline-block; /* Ensure it behaves like a button */
+  text-align: center; /* Center text within the link */
+}
+
+.navbar-links a.navbar-button:hover,
+.page-container a.auth-button:hover,
+.page-container a.navbar-button:hover {
+  background-color: #535bf2; /* Match button hover effect */
+  color: #fff; /* Ensure text color stays white on hover */
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -250,5 +360,8 @@ button:focus-visible {
   .auth-container, .page-container {
     padding: 1rem;
     margin: 1rem auto;
+  }
+  .trip-list-container {
+    grid-template-columns: 1fr; /* Single column on small screens */
   }
 }
