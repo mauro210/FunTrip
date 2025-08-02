@@ -1,22 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, API_BASE_URL } from '../AuthContext'; 
 
+// Define a type for the geographic data we want to store from a selected place
+interface PlaceGeoData {
+  name: string;      // The primary name (e.g., "Dallas")
+  country: string;   // The country (e.g., "United States")
+  locality: string;  // The city/locality component (e.g., "Dallas")
+  placeId: string;   // Google Place ID (unique identifier)
+}
+
 const TripPlanningForm: React.FC = () => {
-  const { token, user } = useAuth(); // Get token and user from AuthContext
+  const { token, user } = useAuth();
   const navigate = useNavigate();
 
   const [tripName, setTripName] = useState('');
-  const [destination, setDestination] = useState('');
+  const [city, setCity] = useState('');
+  const [isCityValidSelection, setIsCityValidSelection] = useState<boolean>(false);
+  const [selectedCityGeoData, setSelectedCityGeoData] = useState<PlaceGeoData | null>(null);
+
+  const [stayAddress, setStayAddress] = useState<string>('');
+  const [isStayAddressValidSelection, setIsStayAddressValidSelection] = useState<boolean>(false);
+  const [selectedStayAddressGeoData, setSelectedStayAddressGeoData] = useState<PlaceGeoData | null>(null); 
+
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [numTravelers, setNumTravelers] = useState(1);
-  const [budgetPerPerson, setBudgetPerPerson] = useState<string>(''); // Use string for input
+  const [budgetPerPerson, setBudgetPerPerson] = useState<string>('');
   const [activityPreferences, setActivityPreferences] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Available activity preferences for checkboxes
+  const cityInputRef = useRef<HTMLInputElement>(null);
+  const stayAddressInputRef = useRef<HTMLInputElement>(null);
+
   const availablePreferences = [
     'Nature', 'Architecture', 'Museums', 'Food', 'Outdoors',
     'Adventure', 'Nightlife', 'Relaxation', 'Shopping', 'History'
@@ -29,6 +46,71 @@ const TripPlanningForm: React.FC = () => {
     );
   };
 
+  // Helper to extract relevant geo data from a Google Place result
+  const extractGeoData = (place: google.maps.places.PlaceResult): PlaceGeoData | null => {
+    if (!place || !place.place_id) return null;
+
+    const countryComponent = place.address_components?.find(comp => comp.types.includes('country'));
+    const localityComponent = place.address_components?.find(comp => comp.types.includes('locality')); // City/locality
+
+    return {
+      placeId: place.place_id,
+      name: place.name || place.formatted_address || '', // Use name or formatted_address
+      country: countryComponent?.long_name || '',
+      locality: localityComponent?.long_name || '',
+    };
+  };
+
+  useEffect(() => {
+    if (window.google && window.google.maps && window.google.maps.places) {
+      if (cityInputRef.current) {
+        const cityAutocomplete = new window.google.maps.places.Autocomplete(
+          cityInputRef.current,
+          { types: ['(cities)'] }
+        );
+        cityAutocomplete.addListener('place_changed', () => {
+          const place = cityAutocomplete.getPlace();
+          if (place.formatted_address) {
+            setCity(place.formatted_address);
+            setIsCityValidSelection(true);
+            setSelectedCityGeoData(extractGeoData(place)); // Store geo data
+          } else if (place.name) {
+            setCity(place.name);
+            setIsCityValidSelection(true);
+            setSelectedCityGeoData(extractGeoData(place)); // Store geo data
+          } else {
+            setIsCityValidSelection(false);
+            setSelectedCityGeoData(null); // Clear geo data
+          }
+        });
+      }
+
+      if (stayAddressInputRef.current) {
+        const stayAddressAutocomplete = new window.google.maps.places.Autocomplete(
+          stayAddressInputRef.current,
+          { types: ['establishment', 'geocode'] }
+        );
+        stayAddressAutocomplete.addListener('place_changed', () => {
+          const place = stayAddressAutocomplete.getPlace();
+          if (place.formatted_address) {
+            setStayAddress(place.formatted_address);
+            setIsStayAddressValidSelection(true);
+            setSelectedStayAddressGeoData(extractGeoData(place)); // Store geo data
+          } else if (place.name) {
+            setStayAddress(place.name);
+            setIsStayAddressValidSelection(true);
+            setSelectedStayAddressGeoData(extractGeoData(place)); // Store geo data
+          } else {
+            setIsStayAddressValidSelection(false);
+            setSelectedStayAddressGeoData(null); // Clear geo data
+          }
+        });
+      }
+    } else {
+        console.warn("Google Maps API (Places Library) not loaded. Autocomplete will not function.");
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -39,9 +121,9 @@ const TripPlanningForm: React.FC = () => {
       return;
     }
 
-    // Basic client-side validation
-    if (!tripName || !destination || !startDate || !endDate) {
-      setError('Please fill in all required fields (Name, Destination, Start Date, End Date).');
+    // Basic client-side validation for required fields
+    if (!tripName || !city || !startDate || !endDate) {
+      setError('Please fill in all required fields (Name, City, Start Date, End Date).');
       return;
     }
     if (new Date(startDate) > new Date(endDate)) {
@@ -52,21 +134,51 @@ const TripPlanningForm: React.FC = () => {
       setError('Number of travelers must be at least 1.');
       return;
     }
+    // Autocomplete selection validation
+    if (!isCityValidSelection) {
+      setError('Please select a valid city from the autocomplete suggestions for "City".');
+      return;
+    }
+    // Geographic consistency validation for stay_address
+    if (stayAddress) { // Only validate if stayAddress is provided
+      if (!isStayAddressValidSelection) {
+        setError('Please select a valid address for "Where You\'re Staying" from the autocomplete suggestions, or leave it empty.');
+        return;
+      }
+      // Check if the selected stay address is consistent with the selected city
+      if (selectedCityGeoData && selectedStayAddressGeoData) {
+        const cityCountry = selectedCityGeoData.country.toLowerCase();
+        const stayCountry = selectedStayAddressGeoData.country.toLowerCase();
+        const cityLocality = selectedCityGeoData.locality.toLowerCase();
+        const stayLocality = selectedStayAddressGeoData.locality.toLowerCase();
+
+        
+        if (cityCountry !== stayCountry || (cityLocality && stayLocality && cityLocality !== stayLocality)) {
+            setError(`"Where You're Staying" must be located in the selected city.`);
+            return;
+        }
+      } else {
+        // This case should ideally not happen if isStayAddressValidSelection is true, but good for robustness
+        setError('Could not verify geographic data for "Where You\'re Staying". Please try selecting it again.');
+        return;
+      }
+    }
+
 
     try {
       const response = await fetch(`${API_BASE_URL}/trips/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // Include the JWT token
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: tripName,
-          destination,
+          city: city,
+          stay_address: stayAddress || null,
           start_date: startDate,
           end_date: endDate,
           num_travelers: numTravelers,
-          // Convert budget to number or null
           budget_per_person: budgetPerPerson ? parseFloat(budgetPerPerson) : null,
           activity_preferences: activityPreferences,
         }),
@@ -96,7 +208,6 @@ const TripPlanningForm: React.FC = () => {
   };
 
   if (!user) {
-    // This case should be mostly handled by PrivateRoute, but good fallback
     return <div className="page-container">Please log in to plan a trip.</div>;
   }
 
@@ -119,13 +230,34 @@ const TripPlanningForm: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label htmlFor="destination">Destination:</label>
+          <label htmlFor="city">City:</label>
           <input
             type="text"
-            id="destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
+            id="city"
+            ref={cityInputRef}
+            value={city}
+            onChange={(e) => {
+              setCity(e.target.value);
+              setIsCityValidSelection(false);
+              setSelectedCityGeoData(null); // Clear geo data on change
+            }}
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="stayAddress">Where You're Staying (Optional):</label>
+          <input
+            type="text"
+            id="stayAddress"
+            ref={stayAddressInputRef}
+            value={stayAddress}
+            onChange={(e) => {
+              setStayAddress(e.target.value);
+              setIsStayAddressValidSelection(false);
+              setSelectedStayAddressGeoData(null); // Clear geo data on change
+            }}
+            placeholder="e.g., Hotel, Airbnb, specific address"
           />
         </div>
 

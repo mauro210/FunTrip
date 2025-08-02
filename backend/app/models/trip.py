@@ -9,7 +9,8 @@ class Trip(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String, index=True, nullable=False)
-    destination = Column(String, nullable=False)
+    city = Column(String, nullable=False) 
+    stay_address = Column(String, nullable=True) 
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     num_travelers = Column(Integer, default=1, nullable=False)
@@ -23,5 +24,5 @@ class Trip(Base):
     itineraries = relationship("Itinerary", back_populates="trip_info")
 
     def __repr__(self):
-        return (f"<Trip(id={self.id}, name='{self.name}', destination='{self.destination}', "
-                f"start_date={self.start_date}, end_date={self.end_date})>")
+        return (f"<Trip(id={self.id}, name='{self.name}', city='{self.city}', "
+                        f"start_date={self.start_date}, end_date={self.end_date})>")

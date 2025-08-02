@@ -7,7 +7,8 @@ import ConfirmModal from "../components/ConfirmModal";
 interface Trip {
   id: number;
   name: string;
-  destination: string;
+  city: string; 
+  stay_address: string | null; 
   start_date: string;
   end_date: string;
   num_travelers: number;
@@ -157,8 +158,13 @@ const MyTrips: React.FC = () => {
             <div key={trip.id} className="trip-card">
               <h3>{trip.name}</h3>
               <p>
-                <strong>Destination:</strong> {trip.destination}
+                <strong>City:</strong> {trip.city} 
               </p>
+              {trip.stay_address && ( 
+                <p>
+                  <strong>Where You're Staying:</strong> {trip.stay_address}
+                </p>
+              )}
               <p>
                 <strong>Dates:</strong> {trip.start_date} to {trip.end_date}
               </p>

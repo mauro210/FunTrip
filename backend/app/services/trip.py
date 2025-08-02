@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
-from app.models.trip import Trip 
+from app.models.trip import Trip
 from app.models.user import User # Import User model for type hinting
 from app.schemas.trip import TripCreate, TripUpdate
 
@@ -12,7 +12,8 @@ def create_trip(db: Session, trip_in: TripCreate, user_id: int) -> Trip:
     db_trip = Trip(
         user_id=user_id,
         name=trip_in.name,
-        destination=trip_in.destination,
+        city=trip_in.city, 
+        stay_address=trip_in.stay_address, 
         start_date=trip_in.start_date,
         end_date=trip_in.end_date,
         num_travelers=trip_in.num_travelers,
@@ -40,7 +41,8 @@ def update_trip(db: Session, db_trip: Trip, trip_update: TripUpdate) -> Trip:
     """
     Updates an existing trip in the database.
     """
-    # Iterate over the fields in the TripUpdate schema
+    # Iterate over the fields in the TripUpdate schema that were actually set
+    # and update the corresponding fields in the database trip object.
     for key, value in trip_update.model_dump(exclude_unset=True).items():
         setattr(db_trip, key, value)
     
