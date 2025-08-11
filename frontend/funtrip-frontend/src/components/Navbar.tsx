@@ -8,7 +8,7 @@ const Navbar: React.FC = () => {
   if (isLoading) {
     return (
       <nav className="navbar">
-        <div className="navbar-brand">AI Trip Planner</div>
+        <div className="navbar-brand">FunTrip</div>
         <div className="navbar-links">Loading...</div>
       </nav>
     );
@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">AI Trip Planner</Link>
+        <Link to="/">FunTrip</Link>
       </div>
       <div className="navbar-links">
         {user ? (

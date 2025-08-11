@@ -12,7 +12,7 @@ from app.api import itineraries
 
 load_dotenv()
 
-app = FastAPI(title="AI Trip Planner API")
+app = FastAPI(title="FunTrip API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,4 +28,4 @@ app.include_router(itineraries.router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to AI Trip Planner API"}
+    return {"message": "Welcome to FunTrip API"}

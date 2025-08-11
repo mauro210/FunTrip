@@ -80,7 +80,7 @@ function App() {
 // Simple Home Page Component
 const Home: React.FC = () => (
   <div className="page-container">
-    <h2>Welcome to AI Trip Planner!</h2>
+    <h2>Welcome to FunTrip!</h2>
     <p>Plan your perfect trip with the power of AI.</p>
   </div>
 );
