@@ -19,23 +19,23 @@ Desktop.ini
 # === Frontend ignores ===
 
 # Logs
-frontend/ai-trip-planner-frontend/npm-debug.log*
-frontend/ai-trip-planner-frontend/yarn-debug.log*
-frontend/ai-trip-planner-frontend/yarn-error.log*
-frontend/ai-trip-planner-frontend/pnpm-debug.log*
-frontend/ai-trip-planner-frontend/lerna-debug.log*
+frontend/funtrip-frontend/npm-debug.log*
+frontend/funtrip-frontend/yarn-debug.log*
+frontend/funtrip-frontend/yarn-error.log*
+frontend/funtrip-frontend/pnpm-debug.log*
+frontend/funtrip-frontend/lerna-debug.log*
 
 # Build outputs and dependencies
-frontend/ai-trip-planner-frontend/node_modules/ 
-frontend/ai-trip-planner-frontend/dist/        
-frontend/ai-trip-planner-frontend/dist-ssr/    
-frontend/ai-trip-planner-frontend/*.local      
+frontend/funtrip-frontend/node_modules/ 
+frontend/funtrip-frontend/dist/        
+frontend/funtrip-frontend/dist-ssr/    
+frontend/funtrip-frontend/*.local      
 
 # TypeScript build info
-frontend/ai-trip-planner-frontend/*.tsbuildinfo
+frontend/funtrip-frontend/*.tsbuildinfo
 
 # Vite cache
-frontend/ai-trip-planner-frontend/.vite/
+frontend/funtrip-frontend/.vite/
 
 # === Backend ignores ===
 
