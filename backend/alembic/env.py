@@ -7,8 +7,11 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # This is the path to your 'backend' directory.
-# We need to add the parent directory (AI-TRIP-PLANNER) to the Python path
+# We need to add the parent directory (FunTrip) to the Python path
 # so that 'app.database' and 'app.models' can be imported.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 # Ensure the backend's 'app' directory is also in the path for direct imports
@@ -56,7 +59,8 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    # Use the environment variable here for offline migrations
+    url = os.getenv("DATABASE_URL")
     context.configure(
         url=url,
         target_metadata=target_metadata,
