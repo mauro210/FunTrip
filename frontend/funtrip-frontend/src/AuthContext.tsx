@@ -6,8 +6,8 @@ import React, {
   type ReactNode,
 } from "react";
 
-// Base URL for your backend API - Defined once here
-export const API_BASE_URL = "http://127.0.0.1:8000"; // Make sure this matches your FastAPI server address
+// Base URL for the backend API
+export const API_BASE_URL = "https://funtrip-backend.onrender.com";
 
 // Define the shape of our authentication context
 interface AuthContextType {
@@ -32,7 +32,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// AuthProvider component to wrap your app and provide the context
+// AuthProvider component to wrap the app and provide the context
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("accessToken")
