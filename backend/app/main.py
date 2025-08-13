@@ -10,7 +10,13 @@ from app.api import auth
 from app.api import trips
 from app.api import itineraries
 
-app = FastAPI(title="FunTrip API")
+# Check for a production environment variable
+IS_PRODUCTION = os.getenv("PRODUCTION", "False") == "True"
+
+if IS_PRODUCTION:
+    app = FastAPI(title="FunTrip API", docs_url=None, redoc_url=None)
+else:
+    app = FastAPI(title="FunTrip API")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
