@@ -10,13 +10,20 @@ from app.api import auth
 from app.api import trips
 from app.api import itineraries
 
-load_dotenv()
-
 app = FastAPI(title="FunTrip API")
+
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+
+if FRONTEND_URL is None:
+    raise ValueError("FRONTEND_URL environment variable is not set.")
+
+origins = [
+    FRONTEND_URL
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  
+    allow_origins=origins,  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
