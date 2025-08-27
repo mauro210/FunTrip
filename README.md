@@ -19,6 +19,11 @@ Note: Early version, more features coming soon!
 
 -----
 
+### ℹ️ Status
+In Progress 🚧 
+
+-----
+
 ### ✨ Key Features
 
   - **User Authentication**: Secure user registration and login.
