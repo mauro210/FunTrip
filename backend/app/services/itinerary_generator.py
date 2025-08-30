@@ -45,8 +45,10 @@ def generate_itinerary_prompt(trip: Trip) -> str:
             preferences_str = f"User activity preferences: {preferences_str}. "
 
     budget_str = ""
+    total_trip_budget = 0.0
     if trip.budget_per_person is not None:
-        budget_str = f"Budget per person: ${trip.budget_per_person:.2f} per day. "
+        total_trip_budget = trip.budget_per_person * trip.num_travelers
+        budget_str = f"Total trip budget for all travelers: ${total_trip_budget:.2f} USD. "
 
     stay_address_str = ""
     if trip.stay_address is not None:
@@ -84,11 +86,11 @@ def generate_itinerary_prompt(trip: Trip) -> str:
         * `transportation`: Suggest how to get there (e.g., "Walk", "Metro", "Taxi", "Bus", "Uber/Lyft").
         * `cost_usd`: Provide an estimated cost in USD (float, >= 0) if applicable (e.g., for tickets, meals, transport). Use 0.0 for free activities.
     4.  **Dates:** Ensure the `day_date` in each `DailyPlan` is accurate and sequential starting from the `trip.start_date`. **Crucially, ensure `day_date` is formatted as a strict "YYYY-MM-DD" string.**
-    5.  **Personalization:** Tailor the itinerary to the `activity_preferences` and `budget_per_person`.
-        * For `budget_per_person`, suggest activities and dining options that align with a general interpretation of the budget (e.g., low, medium, high).
-    6.  **Logistics:** Consider distances between attractions within a day. Group activities geographically to minimize travel.
-    7.  **Realism:** Suggest realistic opening hours, typical durations, and general costs for well-known attractions. If specific times/costs are unknown, provide reasonable estimates or leave optional fields `null`.
-    8.  **Comprehensive Itinerary:** Include typical travel events like checking into accommodation (if applicable) and major meals (breakfast, lunch, dinner) where appropriate.
+    5.  **Personalization:** Tailor the itinerary to the `activity_preferences`. **Strictly adhere to the budget constraints for all cost estimations.**
+    6.  **Budget Constraint:** The **total estimated cost of the itinerary MUST NOT exceed the total trip budget**. It should ideally stay within or just below the total budget.
+    7.  **Logistics:** Consider distances between attractions within a day. Group activities geographically to minimize travel.
+    8.  **Realism:** Suggest realistic opening hours, typical durations, and general costs for well-known attractions. If specific times/costs are unknown, provide reasonable estimates or leave optional fields `null`.
+    9.  **Comprehensive Itinerary:** Include typical travel events like checking into accommodation (if applicable) and major meals (breakfast, lunch, dinner) where appropriate.
 
     **Output Schema (Strictly follow this structure. Do not deviate.):**
     ```json
