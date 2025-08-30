@@ -35,8 +35,8 @@ const TripPlanningForm: React.FC = () => {
   const stayAddressInputRef = useRef<HTMLInputElement>(null);
 
   const availablePreferences = [
-    'Nature', 'Architecture', 'Museums', 'Food', 'Outdoors',
-    'Adventure', 'Nightlife', 'Relaxation', 'Shopping', 'History'
+    'Highlights', 'Adventure', 'Culture', 'Entertainment', 'Shopping', 'Nature', 
+    'History', 'Photography', 'Nightlife', 'Family', 'Food', 'Relaxation' 
   ];
 
   const handlePreferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {

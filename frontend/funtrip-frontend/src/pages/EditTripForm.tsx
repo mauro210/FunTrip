@@ -52,8 +52,8 @@ const EditTripForm: React.FC = () => {
   const stayAddressInputRef = useRef<HTMLInputElement>(null);
 
   const availablePreferences = [
-    "Nature", "Architecture", "Museums", "Food", "Outdoors",
-    "Adventure", "Nightlife", "Relaxation", "Shopping", "History",
+    'Highlights', 'Adventure', 'Culture', 'Entertainment', 'Shopping', 'Nature', 
+    'History', 'Photography', 'Nightlife', 'Family', 'Food', 'Relaxation' 
   ];
 
   // Helper to extract relevant geo data from a Google Place result
