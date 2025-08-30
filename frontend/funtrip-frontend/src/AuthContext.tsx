@@ -7,7 +7,7 @@ import React, {
 } from "react";
 
 // Base URL for the backend API
-export const API_BASE_URL = "https://funtrip-backend.onrender.com";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Define the shape of our authentication context
 interface AuthContextType {
