@@ -39,17 +39,24 @@ def get_trip_by_id(db: Session, trip_id: int, user_id: int) -> Optional[Trip]:
 
 def update_trip(db: Session, db_trip: Trip, trip_update: TripUpdate) -> Trip:
     """
-    Updates an existing trip in the database.
+    Updates an existing trip in the database, but prevents changes
+    to city and stay_address after creation.
     """
-    # Iterate over the fields in the TripUpdate schema that were actually set
-    # and update the corresponding fields in the database trip object.
-    for key, value in trip_update.model_dump(exclude_unset=True).items():
+    update_data = trip_update.model_dump(exclude_unset=True)
+
+    # Prevent updates to city and stay_address
+    update_data.pop("city", None)
+    update_data.pop("stay_address", None)
+
+    # Apply the remaining allowed updates
+    for key, value in update_data.items():
         setattr(db_trip, key, value)
     
-    db.add(db_trip) # Add to session to mark as dirty
+    db.add(db_trip)
     db.commit()
     db.refresh(db_trip)
     return db_trip
+
 
 def delete_trip(db: Session, db_trip: Trip):
     """

@@ -15,7 +15,6 @@ router = APIRouter(prefix="/itineraries", tags=["Itineraries"])
 @router.post("/generate/{trip_id}", response_model=ItineraryOut, status_code=status.HTTP_201_CREATED)
 def generate_trip_itinerary(
     trip_id: int,
-    request: ItineraryGenerateRequest,
     current_user: User = Depends(get_current_user), # Ensure user is authenticated
     db: Session = Depends(get_db)
 ):

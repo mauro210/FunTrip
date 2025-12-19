@@ -1,21 +1,30 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import TripPlanningForm from './pages/TripPlanningForm';
-import MyTrips from './pages/MyTrips';
-import EditTripForm from './pages/EditTripForm'; 
-import { AuthProvider, useAuth } from './AuthContext';
-import './App.css'; // Import global styles
+import React from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import TripPlanningForm from "./pages/TripPlanningForm";
+import MyTrips from "./pages/MyTrips";
+import EditTripForm from "./pages/EditTripForm";
+import { AuthProvider, useAuth } from "./AuthContext";
+import "./App.css"; // Import global styles
+import ItineraryList from "./pages/ItineraryList";
+import ItineraryDetails from "./pages/ItineraryDetails";
 
 // PrivateRoute component to protect routes
-const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({
+  children,
+}) => {
   const { token, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="page-container">Loading authentication...</div>; 
+    return <div className="page-container">Loading authentication...</div>;
   }
 
   return token ? children : <Navigate to="/login" replace />;
@@ -24,7 +33,9 @@ const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) 
 function App() {
   return (
     <Router>
-      <AuthProvider> {/* Wrap the entire app with AuthProvider */}
+      <AuthProvider>
+        {" "}
+        {/* Wrap the entire app with AuthProvider */}
         <Navbar />
         <main className="main-content">
           <Routes>
@@ -67,7 +78,24 @@ function App() {
                 </PrivateRoute>
               }
             />
-            {/* Add more protected routes here */}
+            {/* Protected Itinerary List Route */}
+            <Route
+              path="/itineraries/:tripId"
+              element={
+                <PrivateRoute>
+                  <ItineraryList />
+                </PrivateRoute>
+              }
+            />
+            {/* Protected Itinerary Details Route */}
+            <Route
+              path="/itinerary-details/:itineraryId"
+              element={
+                <PrivateRoute>
+                  <ItineraryDetails />
+                </PrivateRoute>
+              }
+            />
             {/* Fallback for unknown routes */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
