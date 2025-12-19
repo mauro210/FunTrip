@@ -3,18 +3,27 @@ import { useAuth, API_BASE_URL } from "../AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import ConfirmModal from "../components/ConfirmModal";
 
-// Define a type for your Trip data as received from the backend
+// Define a type for the Itinerary data as received from the backend
+interface Itinerary {
+  id: number;
+  title: string;
+  version: number;
+  generated_at: string;
+}
+
+// Define a type for the Trip data as received from the backend
 interface Trip {
   id: number;
   name: string;
-  city: string; 
-  stay_address: string | null; 
+  city: string;
+  stay_address: string | null;
   start_date: string;
   end_date: string;
   num_travelers: number;
   budget_per_person: number | null;
   activity_preferences: string[] | null;
   user_id: number;
+  itineraries: Itinerary[];
 }
 
 const MyTrips: React.FC = () => {
@@ -91,7 +100,6 @@ const MyTrips: React.FC = () => {
       });
 
       if (response.status === 204) {
-        // Just update the trips list by removing the deleted trip
         setTrips((prevTrips) =>
           prevTrips.filter((trip) => trip.id !== tripToDelete.id)
         );
@@ -110,7 +118,11 @@ const MyTrips: React.FC = () => {
     }
   };
 
-  // Function to navigate to the edit trip page
+  // Function to navigate to the itinerary list page
+  const handleViewItineraries = (tripId: number) => {
+    navigate(`/itineraries/${tripId}`);
+  };
+
   const handleEditTrip = (tripId: number) => {
     navigate(`/edit-trip/${tripId}`);
   };
@@ -158,9 +170,9 @@ const MyTrips: React.FC = () => {
             <div key={trip.id} className="trip-card">
               <h3>{trip.name}</h3>
               <p>
-                <strong>City:</strong> {trip.city} 
+                <strong>City:</strong> {trip.city}
               </p>
-              {trip.stay_address && ( 
+              {trip.stay_address && (
                 <p>
                   <strong>Where You're Staying:</strong> {trip.stay_address}
                 </p>
@@ -184,6 +196,12 @@ const MyTrips: React.FC = () => {
                   </p>
                 )}
               <div className="trip-card-actions">
+                <button
+                  onClick={() => handleViewItineraries(trip.id)}
+                  className="navbar-button"
+                >
+                  View Itineraries
+                </button>
                 <button
                   onClick={() => handleEditTrip(trip.id)}
                   className="navbar-button"
