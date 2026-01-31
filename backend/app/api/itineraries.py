@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.database import get_db
 from app.api.auth import get_current_user
@@ -10,7 +14,45 @@ from app.schemas.itinerary import ItineraryOut, ItineraryGenerateRequest # Impor
 from app.services import itinerary_generator as itinerary_service 
 from app.models.trip import Trip # Import Trip model to check ownership
 
+limiter = Limiter(key_func=get_remote_address)
+
 router = APIRouter(prefix="/itineraries", tags=["Itineraries"])
+
+# --- Schema for Guest Trip Data ---
+# Since guests don't have a DB trip, we accept the raw data directly.
+class GuestTripRequest(BaseModel):
+    name: str
+    city: str
+    stay_address: Optional[str] = None
+    start_date: str
+    end_date: str
+    num_travelers: int = 1
+    budget_per_person: Optional[float] = None
+    activity_preferences: List[str] = []
+
+# --- Guest Generation Endpoint ---
+@router.post("/generate/guest", status_code=status.HTTP_200_OK)
+@limiter.limit("3/minute") # Rate Limit: Max 3 requests per minute per IP
+def generate_guest_itinerary(
+    request: Request, # Required for slowapi to check IP
+    trip_data: GuestTripRequest
+):
+    """
+    Generates a stateless itinerary for a guest user.
+    Uses real AI but DOES NOT save to the database.
+    Rate limited to prevent abuse.
+    """
+    try:
+        # Call the service function designed for raw data
+        result = itinerary_service.generate_itinerary_for_guest(trip_data)
+        return result
+
+    except Exception as e:
+        print(f"Error generating guest itinerary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while generating the guest itinerary."
+        )
 
 @router.post("/generate/{trip_id}", response_model=ItineraryOut, status_code=status.HTTP_201_CREATED)
 def generate_trip_itinerary(

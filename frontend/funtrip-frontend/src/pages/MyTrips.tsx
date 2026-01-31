@@ -27,7 +27,7 @@ interface Trip {
 }
 
 const MyTrips: React.FC = () => {
-  const { token, user, isLoading } = useAuth();
+  const { token, user, isLoading, isGuest, guestTrips, removeGuestTrip } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
@@ -39,11 +39,20 @@ const MyTrips: React.FC = () => {
   } | null>(null);
 
   const fetchTrips = async () => {
-    if (!token || !user) {
+    // If not logged in and not a guest, stop.
+    if (!token && !isGuest) {
       setIsFetching(false);
       return;
     }
 
+    // GUEST LOGIC: Load from memory
+    if (isGuest) {
+      // Cast guestTrips to Trip[] to satisfy TypeScript
+      setTrips(guestTrips as Trip[]);
+      setIsFetching(false);
+      return;
+    }
+    // REAL USER LOGIC: Load from API
     try {
       const response = await fetch(`${API_BASE_URL}/trips/`, {
         method: "GET",
@@ -69,10 +78,16 @@ const MyTrips: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isLoading && user) {
-      fetchTrips();
+    // Determine if we can load data
+    if (!isLoading) {
+       if (user || isGuest) {
+         fetchTrips();
+       } else {
+         setIsFetching(false); // Not auth, not guest -> stop loading
+       }
     }
-  }, [token, user, isLoading]);
+    // Add guestTrips to dependency array so the list updates immediately when a guest creates/deletes a trip
+  }, [token, user, isLoading, isGuest, guestTrips]);
 
   const confirmDelete = (tripId: number, tripName: string) => {
     setTripToDelete({ id: tripId, name: tripName });
@@ -85,10 +100,27 @@ const MyTrips: React.FC = () => {
   };
 
   const executeDeleteTrip = async () => {
-    if (!token || !tripToDelete) {
-      setError("Authentication error or no trip selected for deletion.");
-      setIsModalOpen(false); // Close modal
+    // Safety check: ensure a trip is selected
+    if (!tripToDelete) {
+      setError("No trip selected for deletion.");
+      setIsModalOpen(false);
       return;
+    }
+
+    // GUEST LOGIC: Delete from memory
+    if (isGuest) {
+      removeGuestTrip(tripToDelete.id);
+      setIsModalOpen(false);
+      setTripToDelete(null);
+      return;
+    }
+
+    // REAL USER LOGIC: Delete from API
+    // We check for token here. If no token and not guest, it's an auth error.
+    if (!token) {
+        setError("Authentication error.");
+        setIsModalOpen(false);
+        return;
     }
 
     try {
@@ -113,8 +145,8 @@ const MyTrips: React.FC = () => {
       setError("Network error or server is unreachable.");
       console.error("Delete trip network error:", err);
     } finally {
-      setIsModalOpen(false); // Close modal
-      setTripToDelete(null); // Clear trip to delete
+      setIsModalOpen(false);
+      setTripToDelete(null);
     }
   };
 
@@ -142,7 +174,7 @@ const MyTrips: React.FC = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isGuest) {
     return (
       <div className="page-container">Please log in to view your trips.</div>
     );

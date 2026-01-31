@@ -21,7 +21,7 @@ class Trip(Base):
     # A Trip belongs to one User
     owner = relationship("User", back_populates="trips")
     # A Trip can have many generated Itineraries
-    itineraries = relationship("Itinerary", back_populates="trip_info")
+    itineraries = relationship("Itinerary", back_populates="trip_info", cascade="all, delete-orphan")
 
     def __repr__(self):
         return (f"<Trip(id={self.id}, name='{self.name}', city='{self.city}', "

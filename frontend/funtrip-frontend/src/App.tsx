@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useNavigate,
 } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Register from "./pages/Register";
@@ -21,13 +22,14 @@ import ItineraryDetails from "./pages/ItineraryDetails";
 const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({
   children,
 }) => {
-  const { token, isLoading } = useAuth();
+  const { token, isGuest, isLoading } = useAuth();
 
   if (isLoading) {
     return <div className="page-container">Loading authentication...</div>;
   }
 
-  return token ? children : <Navigate to="/login" replace />;
+  // ALLOW access if there is a real token OR if guest mode is active
+  return (token || isGuest) ? children : <Navigate to="/" replace />;
 };
 
 function App() {
@@ -42,6 +44,8 @@ function App() {
             <Route path="/" element={<Home />} /> {/* Simple home page */}
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            {/* Guest confirmation page */}
+            <Route path="/continue-as-guest" element={<GuestLanding />} />
             {/* Protected Dashboard Route */}
             <Route
               path="/dashboard"
@@ -105,12 +109,59 @@ function App() {
   );
 }
 
-// Simple Home Page Component
-const Home: React.FC = () => (
-  <div className="page-container">
-    <h2>Welcome to FunTrip!</h2>
-    <p>Plan your perfect trip with the power of AI.</p>
-  </div>
-);
+// Home Page Component
+const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { token, isGuest } = useAuth();
+
+  // If already logged in or in guest mode, go straight to dashboard
+  if (token || isGuest) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return (
+    <div className="page-container">
+      <h2>Welcome to FunTrip!</h2>
+      <p>Plan your perfect trip with the power of AI.</p>
+      
+      <div className="dashboard-actions">
+        <button onClick={() => navigate("/login")} className="auth-button">
+          Login
+        </button>
+        <button onClick={() => navigate("/register")} className="auth-button">
+          Register
+        </button>
+        <button onClick={() => navigate("/continue-as-guest")} className="auth-button">
+          Continue as Guest
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Guest Landing Component
+const GuestLanding: React.FC = () => {
+  const navigate = useNavigate();
+  const { loginAsGuest } = useAuth();
+
+  const handleStartGuestMode = () => {
+    loginAsGuest();
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="page-container">
+      <h2>Continue as Guest</h2>
+      <p style={{ margin: "0rem 0", color: "#555", lineHeight: "1.6" }}>
+        Continue as Guest lets you explore all features without creating an account. 
+        <br />
+        Trips and itineraries created in guest mode are temporary and won’t be saved once you leave the app.
+      </p>
+      <button onClick={handleStartGuestMode} className="auth-button" style={{ marginTop: "2rem" }}>
+        Start Guest Session
+      </button>
+    </div>
+  );
+};
 
 export default App;

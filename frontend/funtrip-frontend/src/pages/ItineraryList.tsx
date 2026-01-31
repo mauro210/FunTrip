@@ -22,18 +22,14 @@ interface Itinerary {
   total_estimated_duration_minutes?: number;
 }
 
-// Interface for fetching the base trip name
-interface BaseTrip {
-  name: string;
-}
-
 const ItineraryList: React.FC = () => {
-  const { token, user } = useAuth();
+  // Get Guest context values
+  const { token, isGuest, guestTrips, updateGuestTrip } = useAuth();
   const navigate = useNavigate();
   const { tripId } = useParams<{ tripId: string }>();
 
   const [itineraries, setItineraries] = useState<Itinerary[]>([]);
-  const [tripName, setTripName] = useState<string>(""); // State for the actual trip name
+  const [tripName, setTripName] = useState<string>("");
   const [isFetching, setIsFetching] = useState<boolean>(true);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,144 +40,232 @@ const ItineraryList: React.FC = () => {
     title: string;
   } | null>(null);
 
-  // Function to fetch the base trip name
-  const fetchTripName = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/trips/${tripId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data: BaseTrip = await response.json();
-        setTripName(data.name);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to load trip details.");
-      }
-    } catch (err) {
-      setError("Network error or server is unreachable.");
-    }
-  };
+  // --- Fetch Data (Handles Guest vs Real) ---
+  const loadData = async () => {
+    if (!tripId) return;
+    setIsFetching(true);
 
-  // Fetch itineraries when the component mounts
-  const fetchItineraries = async () => {
-    if (!token || !user || !tripId) {
+    // GUEST LOGIC: Load from Memory
+    if (isGuest) {
+      const id = parseInt(tripId);
+      const foundTrip = guestTrips.find((t: any) => t.id === id);
+
+      if (foundTrip) {
+        setTripName(foundTrip.name);
+        // Guest trips might not have 'itineraries' array initialized yet
+        setItineraries(foundTrip.itineraries || []);
+      } else {
+        setError("Trip not found in guest session.");
+      }
       setIsFetching(false);
       return;
     }
 
-    // Run this first, since it is essential for the page title
-    await fetchTripName();
+    // REAL USER LOGIC: Fetch from API
+    if (!token) {
+      setIsFetching(false);
+      return;
+    }
 
     try {
-      const response = await fetch(
+      // 1. Fetch Trip Name
+      const tripRes = await fetch(`${API_BASE_URL}/trips/${tripId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (tripRes.ok) {
+        const tripData = await tripRes.json();
+        setTripName(tripData.name);
+      }
+
+      // 2. Fetch Itineraries
+      const itinRes = await fetch(
         `${API_BASE_URL}/itineraries/trip/${tripId}`,
         {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      if (response.ok) {
-        const data: Itinerary[] = await response.json();
-        setItineraries(data);
+      if (itinRes.ok) {
+        const itinData = await itinRes.json();
+        setItineraries(itinData);
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to fetch itineraries.");
+        setError("Failed to fetch itineraries.");
       }
     } catch (err) {
-      setError("Network error or server is unreachable.");
+      setError("Network error.");
     } finally {
       setIsFetching(false);
     }
   };
 
-  // Fetch itineraries on component mount or when tripId/token changes
   useEffect(() => {
-    if (token && tripId) {
-      fetchItineraries();
-    }
-  }, [token, tripId]);
+    loadData();
+  }, [token, tripId, isGuest, guestTrips]); // Re-run if guestTrips updates
 
-  // Function to generate a new itinerary
+  // --- Generate Itinerary ---
   const handleGenerateItinerary = async () => {
-    if (!token || !tripId) {
-      setError("Authentication error or missing trip ID.");
-      return;
-    }
+    if (!tripId) return;
 
     setIsGenerating(true);
     setError(null);
+
+    // --- GUEST LOGIC: Call Stateless Endpoint ---
+    if (isGuest) {
+      const currentTrip = guestTrips.find(
+        (t: any) => t.id === parseInt(tripId)
+      );
+      if (!currentTrip) {
+        setError("Trip data lost. Please try again.");
+        setIsGenerating(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/itineraries/generate/guest`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // No Authorization header needed for guest endpoint
+            },
+            body: JSON.stringify({
+              name: currentTrip.name, 
+              city: currentTrip.city,
+              stay_address: currentTrip.stay_address || null,
+              start_date: currentTrip.start_date,
+              end_date: currentTrip.end_date,
+              num_travelers: currentTrip.num_travelers,
+              budget_per_person: currentTrip.budget_per_person,
+              activity_preferences: currentTrip.activity_preferences,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const rawItinerary = await response.json();
+          
+          const existingItineraries: Itinerary[] = currentTrip.itineraries || [];
+
+          // 1. Calculate the correct Next Version based on frontend history
+          // Find the highest current version (default to 0 if list is empty)
+          const maxVersion = existingItineraries.reduce(
+              (max, item) => (item.version > max ? item.version : max), 
+              0
+          );
+          const nextVersion = maxVersion + 1;
+
+          // 2. Create the final object with the corrected version
+          const newItinerary = {
+              ...rawItinerary,
+              version: nextVersion 
+          };
+          
+          // 3. Prepend to array so it shows up at the top (Newest First)
+          const updatedTrip = {
+              ...currentTrip,
+              itineraries: [newItinerary, ...existingItineraries] 
+          };
+          
+          updateGuestTrip(updatedTrip);
+
+          // UI will auto-update due to useEffect dependency
+        } else {
+          const errorData = await response.json();
+          // Handle Rate Limiting specifically
+          if (response.status === 429) {
+            setError(
+              "You are generating itineraries too quickly. Please wait a moment."
+            );
+          } else {
+            setError(errorData.detail || "Failed to generate itinerary.");
+          }
+        }
+      } catch (err) {
+        setError("Network error or server unreachable.");
+      } finally {
+        setIsGenerating(false);
+      }
+      return;
+    }
+
+    // --- REAL USER LOGIC: Call Database Endpoint ---
+    if (!token) {
+      setError("Auth Error.");
+      return;
+    }
 
     try {
       const response = await fetch(
         `${API_BASE_URL}/itineraries/generate/${tripId}`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       if (response.ok) {
-        // If generation is successful, re-fetch the list to show the new itinerary
-        await fetchItineraries();
+        loadData(); // Re-fetch from DB
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to generate itinerary.");
       }
     } catch (err) {
-      setError("Network error or server is unreachable.");
+      setError("Network error.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Functions for deleting an itinerary
+  // --- Delete Itinerary ---
   const confirmDelete = (itineraryId: number, itineraryTitle: string) => {
     setItineraryToDelete({ id: itineraryId, title: itineraryTitle });
     setIsDeleteModalOpen(true);
   };
 
-  const handleCancelDelete = () => {
-    setIsDeleteModalOpen(false);
-    setItineraryToDelete(null);
-  };
-
   const executeDeleteItinerary = async () => {
-    if (!token || !itineraryToDelete) {
-      setError("Authentication error or no itinerary selected for deletion.");
+    if (!itineraryToDelete || !tripId) {
       setIsDeleteModalOpen(false);
       return;
     }
+
+    // GUEST LOGIC: Delete from Memory
+    if (isGuest) {
+      const currentTrip = guestTrips.find(
+        (t: any) => t.id === parseInt(tripId)
+      );
+      if (currentTrip && currentTrip.itineraries) {
+        const updatedItins = currentTrip.itineraries.filter(
+          (i: any) => i.id !== itineraryToDelete.id
+        );
+        const updatedTrip = { ...currentTrip, itineraries: updatedItins };
+        updateGuestTrip(updatedTrip);
+      }
+      setIsDeleteModalOpen(false);
+      setItineraryToDelete(null);
+      return;
+    }
+
+    // REAL USER LOGIC: Delete from API
+    if (!token) return;
 
     try {
       const response = await fetch(
         `${API_BASE_URL}/itineraries/${itineraryToDelete.id}`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       if (response.status === 204) {
-        setItineraries((prevItineraries) =>
-          prevItineraries.filter((itin) => itin.id !== itineraryToDelete.id)
+        setItineraries((prev) =>
+          prev.filter((itin) => itin.id !== itineraryToDelete.id)
         );
-        setError(null);
       } else {
-        const errorData = await response.json();
-        setError(errorData.detail || "Failed to delete itinerary.");
+        setError("Failed to delete.");
       }
     } catch (err) {
-      setError("Network error or server is unreachable.");
+      setError("Network error.");
     } finally {
       setIsDeleteModalOpen(false);
       setItineraryToDelete(null);
@@ -192,22 +276,9 @@ const ItineraryList: React.FC = () => {
     return <div className="page-container">Loading itineraries...</div>;
   }
 
-  if (error) {
-    return (
-      <div
-        className="page-container error-message"
-        style={{ whiteSpace: "pre-wrap" }}
-      >
-        {error}
-      </div>
-    );
-  }
-
-  // Use the actual tripName from state
   const displayTripName = tripName || "Trip";
 
   return (
-    /* 1. Wrapper: Flex column that centers content, but has no width limits itself */
     <div
       style={{
         display: "flex",
@@ -216,7 +287,6 @@ const ItineraryList: React.FC = () => {
         width: "100%",
       }}
     >
-      {/* 2. Back Button Container: constrained to 800px to match the card below */}
       <div style={{ width: "100%", maxWidth: "800px" }}>
         <button
           onClick={() => navigate("/my-trips")}
@@ -232,10 +302,14 @@ const ItineraryList: React.FC = () => {
         </button>
       </div>
 
-      {/* 3. Main Card: We rely purely on the CSS class 'page-container' for sizing */
-      /* We just remove the margin so it sits closer to the button */}
       <div className="page-container" style={{ margin: "0 0 2rem 0" }}>
         <h2>Itineraries for {displayTripName}</h2>
+
+        {error && (
+          <div className="error-message" style={{ marginBottom: "1rem" }}>
+            {error}
+          </div>
+        )}
 
         <button
           onClick={handleGenerateItinerary}
@@ -247,10 +321,7 @@ const ItineraryList: React.FC = () => {
         </button>
 
         {itineraries.length === 0 ? (
-          <p>
-            No itineraries have been generated yet. Click "Generate New
-            Itinerary" to get started!
-          </p>
+          <p>No itineraries generated yet.</p>
         ) : (
           <div className="itinerary-list-container">
             {itineraries.map((itinerary) => (
@@ -288,9 +359,9 @@ const ItineraryList: React.FC = () => {
 
         <ConfirmModal
           isOpen={isDeleteModalOpen}
-          message={`Are you sure you want to delete itinerary "${itineraryToDelete?.title}"? This action cannot be undone.`}
+          message={`Are you sure you want to delete itinerary "${itineraryToDelete?.title}"?`}
           onConfirm={executeDeleteItinerary}
-          onCancel={handleCancelDelete}
+          onCancel={() => setIsDeleteModalOpen(false)}
         />
       </div>
     </div>

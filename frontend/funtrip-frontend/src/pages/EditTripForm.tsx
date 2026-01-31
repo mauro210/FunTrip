@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth, API_BASE_URL } from "../AuthContext";
 
-// Define a type for your Trip data as received from the backend
+// Define a type for the Trip data as received from the backend
 interface Trip {
   id: number;
   name: string;
@@ -17,7 +17,7 @@ interface Trip {
 }
 
 const EditTripForm: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token, user, isGuest, guestTrips, updateGuestTrip } = useAuth();
   const navigate = useNavigate();
   const { tripId } = useParams<{ tripId: string }>();
 
@@ -34,6 +34,9 @@ const EditTripForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoadingTrip, setIsLoadingTrip] = useState<boolean>(true);
+
+  // We need to store the full trip object for guests to preserve ID/Metadata
+  const [fullGuestTripObj, setFullGuestTripObj] = useState<any>(null);
 
   const cityInputRef = useRef<HTMLInputElement>(null);
   const stayAddressInputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +59,40 @@ const EditTripForm: React.FC = () => {
   // Effect to fetch existing trip data
   useEffect(() => {
     const fetchTripData = async () => {
-      if (!token || !user || !tripId) {
+      if (!tripId) {
+        setIsLoadingTrip(false);
+        return;
+      }
+
+      // --- GUEST LOGIC: Load from Memory ---
+      if (isGuest) {
+        const idToFind = parseInt(tripId);
+        const foundTrip = guestTrips.find((t: any) => t.id === idToFind);
+
+        if (foundTrip) {
+          setFullGuestTripObj(foundTrip); // Keep reference to original object
+          setInitialTripName(foundTrip.name);
+          setTripName(foundTrip.name);
+          setCity(foundTrip.city);
+          setStayAddress(foundTrip.stay_address || "");
+          setStartDate(foundTrip.start_date);
+          setEndDate(foundTrip.end_date);
+          setNumTravelers(foundTrip.num_travelers);
+          setBudgetPerPerson(
+            foundTrip.budget_per_person !== null
+              ? foundTrip.budget_per_person.toString()
+              : ""
+          );
+          setActivityPreferences(foundTrip.activity_preferences || []);
+        } else {
+          setError("Trip not found in guest session.");
+        }
+        setIsLoadingTrip(false);
+        return;
+      }
+
+      // --- REAL USER LOGIC: Fetch from API ---
+      if (!token || !user) {
         setIsLoadingTrip(false);
         return;
       }
@@ -98,7 +134,7 @@ const EditTripForm: React.FC = () => {
     };
 
     fetchTripData();
-  }, [token, user, tripId]);
+  }, [token, user, tripId, isGuest, guestTrips]);
 
   const handlePreferenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value, checked } = e.target;
@@ -112,7 +148,7 @@ const EditTripForm: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    if (!token || !tripId) {
+    if ((!token && !isGuest) || !tripId) {
       setError("Authentication error or missing trip ID.");
       return;
     }
@@ -133,6 +169,33 @@ const EditTripForm: React.FC = () => {
       return;
     }
 
+    // --- GUEST LOGIC: Update Memory ---
+    if (isGuest) {
+      if (!fullGuestTripObj) {
+        setError("Original trip data missing.");
+        return;
+      }
+
+      const updatedGuestTrip = {
+        ...fullGuestTripObj, // Keep original ID and creation dates
+        name: tripName,
+        // City is disabled in edit mode, so we keep the original
+        // stay_address is disabled in edit mode, so we keep the original
+        start_date: startDate,
+        end_date: endDate,
+        num_travelers: numTravelers,
+        budget_per_person: budgetPerPerson ? parseFloat(budgetPerPerson) : null,
+        activity_preferences: activityPreferences,
+      };
+
+      updateGuestTrip(updatedGuestTrip);
+      
+      setSuccess(`Trip "${updatedGuestTrip.name}" updated successfully! Redirecting to My Trips...`);
+      setTimeout(() => navigate("/my-trips"), 1000);
+      return;
+    }
+
+    // --- REAL USER LOGIC: Update API ---
     try {
       const response = await fetch(`${API_BASE_URL}/trips/${tripId}`, {
         method: "PUT",
@@ -185,7 +248,7 @@ const EditTripForm: React.FC = () => {
     }
   };
 
-  if (isLoadingTrip || !user) {
+  if (isLoadingTrip || (!user && !isGuest)) {
     return <div className="page-container">Loading trip details...</div>;
   }
 

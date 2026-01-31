@@ -13,7 +13,7 @@ interface PlaceGeoData {
 }
 
 const TripPlanningForm: React.FC = () => {
-  const { token, user } = useAuth();
+  const { token, user, isGuest, addGuestTrip } = useAuth();
   const navigate = useNavigate();
 
   const [tripName, setTripName] = useState("");
@@ -147,7 +147,7 @@ const TripPlanningForm: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    if (!token) {
+    if (!token && !isGuest) {
       setError("You must be logged in to create a trip.");
       return;
     }
@@ -228,61 +228,87 @@ const TripPlanningForm: React.FC = () => {
       }
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/trips/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: tripName,
-          city: city,
-          stay_address: stayAddress || null,
-          start_date: startDate,
-          end_date: endDate,
-          num_travelers: numTravelers,
-          budget_per_person: budgetPerPerson
-            ? parseFloat(budgetPerPerson)
-            : null,
-          activity_preferences: activityPreferences,
-        }),
-      });
+    if (isGuest) {
+      // --- GUEST MODE: Save to Memory ---
+      const guestTrip = {
+        id: Date.now(), // Generate a fake ID
+        name: tripName,
+        city: city,
+        stay_address: stayAddress || null,
+        start_date: startDate,
+        end_date: endDate,
+        num_travelers: numTravelers,
+        budget_per_person: budgetPerPerson ? parseFloat(budgetPerPerson) : null,
+        activity_preferences: activityPreferences,
+        user_id: 0, // Fake user ID
+        created_at: new Date().toISOString(),
+      };
 
-      if (response.ok) {
-        const newTrip = await response.json();
-        setSuccess(
-          `Trip "${newTrip.name}" created successfully! Redirecting to My Trips...`
-        );
-        setTimeout(() => navigate("/my-trips"), 1500);
-      } else {
-        const errorData = await response.json();
-        if (
-          response.status === 422 &&
-          errorData.detail &&
-          Array.isArray(errorData.detail)
-        ) {
-          const messages = errorData.detail
-            .map((err: any) => {
-              const loc = err.loc ? err.loc.join(".") + ": " : "";
-              return `${loc}${err.msg}`;
-            })
-            .join("\n");
-          setError(`Validation Error:\n${messages}`);
-        } else {
-          setError(errorData.detail || "Failed to create trip.");
-        }
-        console.error("Trip creation error:", errorData);
-      }
-    } catch (err) {
-      setError(
-        "Network error or server is unreachable. Please check your internet connection."
+      // Add to AuthContext state
+      addGuestTrip(guestTrip);
+
+      setSuccess(
+        `Trip "${guestTrip.name}" created successfully! Redirecting to My Trips...`
       );
-      console.error("Trip creation network error:", err);
+      setTimeout(() => navigate("/my-trips"), 1000);
+    } else {
+      // --- REAL USER: Save to Database ---
+      try {
+        const response = await fetch(`${API_BASE_URL}/trips/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: tripName,
+            city: city,
+            stay_address: stayAddress || null,
+            start_date: startDate,
+            end_date: endDate,
+            num_travelers: numTravelers,
+            budget_per_person: budgetPerPerson
+              ? parseFloat(budgetPerPerson)
+              : null,
+            activity_preferences: activityPreferences,
+          }),
+        });
+
+        if (response.ok) {
+          const newTrip = await response.json();
+          setSuccess(
+            `Trip "${newTrip.name}" created successfully! Redirecting to My Trips...`
+          );
+          setTimeout(() => navigate("/my-trips"), 1500);
+        } else {
+          const errorData = await response.json();
+          if (
+            response.status === 422 &&
+            errorData.detail &&
+            Array.isArray(errorData.detail)
+          ) {
+            const messages = errorData.detail
+              .map((err: any) => {
+                const loc = err.loc ? err.loc.join(".") + ": " : "";
+                return `${loc}${err.msg}`;
+              })
+              .join("\n");
+            setError(`Validation Error:\n${messages}`);
+          } else {
+            setError(errorData.detail || "Failed to create trip.");
+          }
+          console.error("Trip creation error:", errorData);
+        }
+      } catch (err) {
+        setError(
+          "Network error or server is unreachable. Please check your internet connection."
+        );
+        console.error("Trip creation network error:", err);
+      }
     }
   };
 
-  if (!user) {
+  if (!user && !isGuest) {
     return <div className="page-container">Please log in to plan a trip.</div>;
   }
 

@@ -37,7 +37,7 @@ interface Itinerary {
 }
 
 const ItineraryDetails: React.FC = () => {
-  const { token } = useAuth();
+  const { token, isGuest, guestTrips } = useAuth();
   const navigate = useNavigate();
   const { itineraryId } = useParams<{ itineraryId: string }>();
 
@@ -46,7 +46,38 @@ const ItineraryDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchItineraryDetails = async () => {
-    if (!token || !itineraryId) {
+    if (!itineraryId) {
+      setIsLoading(false);
+      return;
+    }
+
+    // --- GUEST LOGIC: Find in Memory ---
+    if (isGuest) {
+      const targetId = parseInt(itineraryId);
+      let foundItinerary: Itinerary | undefined;
+
+      // Search through all guest trips to find the specific itinerary
+      for (const trip of guestTrips) {
+        if (trip.itineraries && Array.isArray(trip.itineraries)) {
+          const match = trip.itineraries.find((i: Itinerary) => i.id === targetId);
+          if (match) {
+            foundItinerary = match;
+            break; // Found it, stop searching
+          }
+        }
+      }
+
+      if (foundItinerary) {
+        setItinerary(foundItinerary);
+      } else {
+        setError("Itinerary not found in guest session.");
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // --- REAL USER LOGIC: Fetch from API ---
+    if (!token) {
       setIsLoading(false);
       return;
     }
@@ -78,7 +109,7 @@ const ItineraryDetails: React.FC = () => {
 
   useEffect(() => {
     fetchItineraryDetails();
-  }, [token, itineraryId]);
+  }, [token, itineraryId, isGuest, guestTrips]);
 
   if (isLoading)
     return <div className="page-container">Loading your adventure...</div>;
@@ -164,6 +195,7 @@ const ItineraryDetails: React.FC = () => {
                       weekday: "long",
                       month: "short",
                       day: "numeric",
+                      timeZone: "UTC",
                     })}
                   </span>
                   {day.theme && (

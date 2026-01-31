@@ -30,8 +30,9 @@ const Navbar: React.FC = () => {
           </>
         ) : (
           <>
-            <Link to="/register">Register</Link>
             <Link to="/login">Login</Link>
+            <Link to="/register">Register</Link>
+            <Link to="/continue-as-guest">Guest</Link>
           </>
         )}
       </div>

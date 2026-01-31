@@ -10,7 +10,7 @@ class Activity(BaseModel):
     name: str = Field(..., description="Name or title of the activity (e.g., 'Visit Eiffel Tower')")
     description: Optional[str] = Field(None, description="Brief description of the activity")
     location: Optional[str] = Field(None, description="Physical location or address of the activity")
-    estimated_duration_minutes: Optional[int] = Field(None, ge=5, description="Estimated duration of the activity in minutes")
+    estimated_duration_minutes: Optional[int] = Field(None, ge=0, description="Estimated duration of the activity in minutes")
     transportation: Optional[str] = Field(None, description="Suggested transportation method to this activity (e.g., 'Walk', 'Metro', 'Taxi')")
     cost_usd: Optional[float] = Field(None, ge=0, description="Estimated cost of the activity in USD")
 
